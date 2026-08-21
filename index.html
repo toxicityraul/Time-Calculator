@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#101828" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="TimeBank" />
+  <meta name="description" content="A mobile-friendly UPT and PTO calculator for shift planning." />
+  <title>TimeBank — UPT & PTO Calculator</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero">
+      <div>
+        <div class="eyebrow">UNOFFICIAL PERSONAL CALCULATOR</div>
+        <h1>TimeBank</h1>
+        <p>Plan UPT, Flexible PTO, Standard PTO, your desired leave time, and single-shift UPT earnings.</p>
+      </div>
+      <button id="shareBtn" class="icon-btn" type="button" aria-label="Share calculator">↗</button>
+    </header>
+
+    <main>
+      <section class="summary-card" aria-live="polite">
+        <div class="summary-top">
+          <div>
+            <span class="label">Earliest leave time</span>
+            <strong id="earliestLeave" class="big-time">—</strong>
+          </div>
+          <span id="nextDayBadge" class="pill hidden">next day</span>
+        </div>
+        <div class="coverage-bar"><div id="coverageFill"></div></div>
+        <div class="summary-grid">
+          <div><span>Time covered</span><strong id="coverageTotal">0 min</strong></div>
+          <div><span>PTO selected</span><strong id="ptoTotal">0 min</strong></div>
+          <div><span>Usable UPT</span><strong id="usableUpt">0 min</strong></div>
+          <div><span>UPT remainder</span><strong id="uptRemainder">0 min</strong></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <h2>1. Time balances</h2>
+            <p>UPT is usable only in 15-minute blocks. Flexible and Standard PTO can be combined minute-for-minute.</p>
+          </div>
+          <button id="demoBtn" class="text-btn" type="button">Load example</button>
+        </div>
+
+        <div class="balance-row">
+          <div class="balance-title">
+            <span class="dot upt"></span>
+            <div><strong>UPT</strong><small>15-minute blocks</small></div>
+          </div>
+          <div class="time-pair">
+            <label><input id="uptHours" type="number" min="0" max="80" inputmode="numeric" value="2"><span>hr</span></label>
+            <label><input id="uptMinutes" type="number" min="0" max="59" inputmode="numeric" value="27"><span>min</span></label>
+          </div>
+        </div>
+
+        <div class="balance-row">
+          <div class="balance-title">
+            <span class="dot flex"></span>
+            <div><strong>Flexible PTO</strong><small>Exact-minute use</small></div>
+          </div>
+          <div class="time-pair">
+            <label><input id="flexHours" type="number" min="0" inputmode="numeric" value="0"><span>hr</span></label>
+            <label><input id="flexMinutes" type="number" min="0" max="59" inputmode="numeric" value="2"><span>min</span></label>
+          </div>
+        </div>
+
+        <div class="balance-row">
+          <div class="balance-title">
+            <span class="dot standard"></span>
+            <div><strong>Standard PTO</strong><small>Exact-minute use</small></div>
+          </div>
+          <div class="time-pair">
+            <label><input id="standardHours" type="number" min="0" inputmode="numeric" value="0"><span>hr</span></label>
+            <label><input id="standardMinutes" type="number" min="0" max="59" inputmode="numeric" value="0"><span>min</span></label>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <h2>2. Shift</h2>
+            <p>Overnight shifts are detected automatically. The unpaid lunch is removed from work and coverage calculations.</p>
+          </div>
+        </div>
+
+        <div class="field-grid two">
+          <label class="field">
+            <span>Shift starts</span>
+            <input id="shiftStart" type="time" value="18:15" />
+          </label>
+          <label class="field">
+            <span>Shift ends</span>
+            <input id="shiftEnd" type="time" value="04:45" />
+          </label>
+        </div>
+
+        <label class="switch-row">
+          <span>
+            <strong>30-minute unpaid lunch</strong>
+            <small>Default: 10:45 PM–11:15 PM. You can change the times if needed.</small>
+          </span>
+          <input id="breakEnabled" type="checkbox" checked />
+        </label>
+
+        <div id="breakFields" class="field-grid two">
+          <label class="field">
+            <span>Lunch starts</span>
+            <input id="breakStart" type="time" value="22:45" />
+          </label>
+          <label class="field">
+            <span>Lunch ends</span>
+            <input id="breakEnd" type="time" value="23:15" />
+          </label>
+        </div>
+
+        <div class="metric-strip">
+          <div><span>Scheduled work</span><strong id="scheduledWork">—</strong></div>
+          <div><span>UPT earned if fully worked</span><strong id="fullShiftEarn">—</strong></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <h2>3. How early can I leave?</h2>
+            <p>Choose how much of each balance you are willing to spend. UPT is limited to full 15-minute blocks.</p>
+          </div>
+          <button id="useAllBtn" class="text-btn" type="button">Use all</button>
+        </div>
+
+        <div class="spend-block">
+          <div class="spend-label"><span>Flexible PTO</span><strong id="flexSpendLabel">0 min</strong></div>
+          <input id="flexSpend" type="range" min="0" max="0" step="1" value="0" />
+        </div>
+
+        <div class="spend-block">
+          <div class="spend-label"><span>Standard PTO</span><strong id="standardSpendLabel">0 min</strong></div>
+          <input id="standardSpend" type="range" min="0" max="0" step="1" value="0" />
+        </div>
+
+        <div class="spend-block">
+          <div class="spend-label"><span>UPT</span><strong id="uptSpendLabel">0 min</strong></div>
+          <input id="uptSpend" type="range" min="0" max="0" step="15" value="0" />
+          <small class="hint">Example: a 1 hr 16 min UPT balance gives 1 hr 15 min usable for planning.</small>
+        </div>
+
+        <div class="result-panel">
+          <div><span>You can leave</span><strong id="resultLeave">—</strong></div>
+          <div><span>Actual work before leaving</span><strong id="workedBeforeLeave">—</strong></div>
+          <div><span>UPT earned from time worked</span><strong id="earnedByLeave">—</strong></div>
+          <div><span>Selected time off</span><strong id="selectedTimeOff">—</strong></div>
+        </div>
+      </section>
+
+      <section class="card target-card">
+        <div class="section-heading">
+          <div>
+            <h2>4. What time do I want to leave?</h2>
+            <p>Pick a leave time. If you have enough time, TimeBank gives you a valid combination. If not, it shows the earliest time you can leave.</p>
+          </div>
+        </div>
+
+        <div class="field-grid two">
+          <label class="field">
+            <span>Desired leave time</span>
+            <input id="desiredLeave" type="time" value="01:07" />
+          </label>
+          <label class="field">
+            <span>Use priority</span>
+            <select id="targetPriority">
+              <option value="save_upt">Save UPT — paid time first</option>
+              <option value="save_pto">Save PTO — UPT first</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="field pto-order-field">
+          <span>Paid time order</span>
+          <select id="ptoOrder">
+            <option value="flex_first">Flexible PTO first</option>
+            <option value="standard_first">Standard PTO first</option>
+          </select>
+        </label>
+
+        <div id="targetStatus" class="target-status success">
+          <div class="status-icon" aria-hidden="true">✓</div>
+          <div>
+            <span id="targetStatusKicker">You can leave at</span>
+            <strong id="targetStatusTime">—</strong>
+            <p id="targetStatusText">Your available time can cover the rest of the shift.</p>
+          </div>
+        </div>
+
+        <div class="target-metrics">
+          <div><span>Time needing coverage</span><strong id="targetNeeded">—</strong></div>
+          <div><span>Total balance charged</span><strong id="targetCharged">—</strong></div>
+          <div><span>UPT rounding</span><strong id="targetRounding">—</strong></div>
+        </div>
+
+        <div id="targetPlan" class="usage-plan">
+          <div class="usage-row usage-head"><span>Balance</span><span>Use</span><span>Remaining</span></div>
+          <div class="usage-row"><span><i class="mini-dot flex"></i>Flexible PTO</span><strong id="targetFlexUse">—</strong><span id="targetFlexRemain">—</span></div>
+          <div class="usage-row"><span><i class="mini-dot standard"></i>Standard PTO</span><strong id="targetStandardUse">—</strong><span id="targetStandardRemain">—</span></div>
+          <div class="usage-row"><span><i class="mini-dot upt"></i>UPT</span><strong id="targetUptUse">—</strong><span id="targetUptRemain">—</span></div>
+        </div>
+
+        <div id="targetShortfall" class="shortfall-box hidden">
+          <div><span>You are short</span><strong id="targetShortBy">—</strong></div>
+          <div><span>Earliest possible leave</span><strong id="targetEarliestPossible">—</strong></div>
+        </div>
+
+        <p id="targetNote" class="target-note"></p>
+      </section>
+
+      <section class="card prediction-card">
+        <div class="section-heading">
+          <div>
+            <h2>UPT prediction — one shift</h2>
+            <p>A small same-day estimate only. It predicts UPT from the time actually worked and automatically accounts for the 30-minute lunch.</p>
+          </div>
+        </div>
+
+        <div class="field-grid two">
+          <label class="field">
+            <span>Start time</span>
+            <input id="predictStart" type="time" value="18:15" />
+          </label>
+          <label class="field">
+            <span>End / leave time</span>
+            <input id="predictEnd" type="time" value="04:45" />
+          </label>
+        </div>
+
+        <label class="field prediction-lunch-field">
+          <span>Lunch starts <em>— fixed 30 minutes</em></span>
+          <input id="predictLunchStart" type="time" value="22:45" />
+        </label>
+
+        <div class="prediction-result">
+          <div><span>Elapsed</span><strong id="predictElapsed">10 hr 30 min</strong></div>
+          <div><span>Lunch deducted</span><strong id="predictLunch">30 min</strong></div>
+          <div><span>Actually worked</span><strong id="predictWorked">10 hrs</strong></div>
+          <div class="prediction-highlight"><span>Predicted UPT earned</span><strong id="predictEarned">50 min</strong></div>
+        </div>
+        <p id="predictExplanation" class="prediction-note">6:15 PM → 4:45 AM is 10 hr 30 min elapsed. After the 30-minute lunch, that is 10 hours worked → about 50 min UPT.</p>
+      </section>
+
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <h2>15-minute UPT checker</h2>
+            <p>Check a late clock-in against the scheduled shift start.</p>
+          </div>
+        </div>
+
+        <label class="field">
+          <span>Actual clock-in</span>
+          <input id="actualClockIn" type="time" value="18:21" />
+        </label>
+
+        <div class="checker-result">
+          <div><span>Late by</span><strong id="lateBy">6 min</strong></div>
+          <div><span>UPT charge</span><strong id="lateCharge">15 min</strong></div>
+        </div>
+
+        <p id="lateExplanation" class="explanation">6:21 PM is 6 minutes after 6:15 PM, so it falls in the first 15-minute UPT block.</p>
+      </section>
+
+      <section class="card compact">
+        <h2>Rules used by this calculator</h2>
+        <ul>
+          <li>UPT accrues at 5 minutes per hour actually worked.</li>
+          <li>The single-shift prediction prorates that rate by minutes worked and rounds down to a whole minute.</li>
+          <li>UPT balance is capped at 80 hours.</li>
+          <li>UPT attendance gaps are charged in 15-minute blocks.</li>
+          <li>Only the balance rounded down to a full 15-minute block is available when planning a maximum early leave.</li>
+          <li>Flexible PTO and Standard PTO can be combined and used by the minute.</li>
+          <li>Unpaid lunch time is excluded from work and time-off coverage.</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer>
+      This is an unofficial planning tool. Your employer's timekeeping system is the final source of truth.
+    </footer>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="./app.js"></script>
+</body>
+</html>
